@@ -1,0 +1,421 @@
+==============================================================================
+                    ADVANCED NETWORKING WITH VPCs AND PEERING
+                              Day 28 - Aug 28, 2026
+==============================================================================
+
+1. VPC FUNDAMENTALS
+==============================================================================
+
+1.1 What is a VPC?
+- Virtual Private Cloud: Isolated network environment in cloud
+- Complete control over network configuration
+- Subnets, route tables, gateways, security groups
+- Custom IP addressing (CIDR blocks)
+
+1.2 VPC Components:
+  * CIDR Block (e.g., 10.0.0.0/16)
+  * Subnets (public and private)
+  * Internet Gateway (IGW)
+  * NAT Gateway
+  * Route Tables
+  * Network ACLs
+  * Security Groups
+  * VPC Endpoints
+
+1.3 VPC CIDR Planning:
+  Example: 10.0.0.0/16 (65,536 IPs)
+  - Public Subnet 1:  10.0.1.0/24 (256 IPs)
+  - Public Subnet 2:  10.0.2.0/24 (256 IPs)
+  - Private Subnet 1: 10.0.10.0/24 (256 IPs)
+  - Private Subnet 2: 10.0.11.0/24 (256 IPs)
+
+==============================================================================
+2. VPC PEERING
+==============================================================================
+
+2.1 What is VPC Peering?
+- Direct network connection between two VPCs
+- Enables private communication without internet
+- Works within same region or across regions
+- Low latency, high bandwidth
+
+2.2 VPC Peering Benefits:
+  ✓ Private connectivity
+  ✓ Cost-effective (no data transfer charges within region)
+  ✓ Simple setup
+  ✓ Full network functionality
+  ✗ Limitations: No transitive peering (A-B, B-C ≠ A-C)
+
+2.3 Peering Connection Flow:
+  VPC-A (10.0.0.0/16) ←→ VPC-B (172.16.0.0/16)
+  
+  Step 1: Request peering connection
+  Step 2: Accept peering connection
+  Step 3: Update route tables in both VPCs
+  Step 4: Configure security groups/NACLs
+
+==============================================================================
+3. TERRAFORM CODE - VPC SETUP
+==============================================================================
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+# VPC-A Configuration
+resource "aws_vpc" "vpc_a" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  
+  tags = {
+    Name = "VPC-A"
+  }
+}
+
+# VPC-B Configuration
+resource "aws_vpc" "vpc_b" {
+  cidr_block           = "172.16.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  
+  tags = {
+    Name = "VPC-B"
+  }
+}
+
+# Public Subnet in VPC-A
+resource "aws_subnet" "public_subnet_a" {
+  vpc_id                  = aws_vpc.vpc_a.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
+  
+  tags = {
+    Name = "Public-Subnet-A"
+  }
+}
+
+# Private Subnet in VPC-B
+resource "aws_subnet" "private_subnet_b" {
+  vpc_id            = aws_vpc.vpc_b.id
+  cidr_block        = "172.16.10.0/24"
+  availability_zone = "us-east-1a"
+  
+  tags = {
+    Name = "Private-Subnet-B"
+  }
+}
+
+# Internet Gateway for VPC-A
+resource "aws_internet_gateway" "igw_a" {
+  vpc_id = aws_vpc.vpc_a.id
+  
+  tags = {
+    Name = "IGW-A"
+  }
+}
+
+# Route Table for VPC-A
+resource "aws_route_table" "rt_a" {
+  vpc_id = aws_vpc.vpc_a.id
+  
+  route {
+    cidr_block      = "0.0.0.0/0"
+    gateway_id      = aws_internet_gateway.igw_a.id
+  }
+  
+  tags = {
+    Name = "RouteTable-A"
+  }
+}
+
+# Associate Route Table with Subnet
+resource "aws_route_table_association" "rta" {
+  subnet_id      = aws_subnet.public_subnet_a.id
+  route_table_id = aws_route_table.rt_a.id
+}
+
+==============================================================================
+4. VPC PEERING TERRAFORM CODE
+==============================================================================
+
+# Create Peering Connection
+resource "aws_vpc_peering_connection" "peer_a_to_b" {
+  vpc_id        = aws_vpc.vpc_a.id
+  peer_vpc_id   = aws_vpc.vpc_b.id
+  auto_accept   = true
+  
+  tags = {
+    Name = "VPC-A-to-VPC-B-Peering"
+  }
+}
+
+# Route in VPC-A for peering traffic
+resource "aws_route" "route_peer_a" {
+  route_table_id            = aws_route_table.rt_a.id
+  destination_cidr_block    = "172.16.0.0/16"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer_a_to_b.id
+}
+
+# Route Table for VPC-B
+resource "aws_route_table" "rt_b" {
+  vpc_id = aws_vpc.vpc_b.id
+  
+  tags = {
+    Name = "RouteTable-B"
+  }
+}
+
+# Route in VPC-B for peering traffic
+resource "aws_route" "route_peer_b" {
+  route_table_id            = aws_route_table.rt_b.id
+  destination_cidr_block    = "10.0.0.0/16"
+  vpc_peering_connection_id = aws_vpc_peering_connection.peer_a_to_b.id
+}
+
+# Associate Route Table with VPC-B Subnet
+resource "aws_route_table_association" "rtb" {
+  subnet_id      = aws_subnet.private_subnet_b.id
+  route_table_id = aws_route_table.rt_b.id
+}
+
+==============================================================================
+5. SECURITY GROUPS CONFIGURATION
+==============================================================================
+
+# Security Group for VPC-A (Allow inbound from VPC-B)
+resource "aws_security_group" "sg_a" {
+  name        = "sg-vpc-a"
+  description = "Security group for VPC-A"
+  vpc_id      = aws_vpc.vpc_a.id
+  
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["172.16.0.0/16"]  # Allow from VPC-B
+  }
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  tags = {
+    Name = "SG-VPC-A"
+  }
+}
+
+# Security Group for VPC-B (Allow inbound from VPC-A)
+resource "aws_security_group" "sg_b" {
+  name        = "sg-vpc-b"
+  description = "Security group for VPC-B"
+  vpc_id      = aws_vpc.vpc_b.id
+  
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]  # Allow from VPC-A
+  }
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  tags = {
+    Name = "SG-VPC-B"
+  }
+}
+
+==============================================================================
+6. EC2 INSTANCES IN BOTH VPCs
+==============================================================================
+
+# EC2 Instance in VPC-A (Public)
+resource "aws_instance" "ec2_a" {
+  ami                    = "ami-0c55b159cbfafe1f0"  # Amazon Linux 2
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.public_subnet_a.id
+  vpc_security_group_ids = [aws_security_group.sg_a.id]
+  
+  user_data = base64encode(<<-EOF
+              #!/bin/bash
+              yum update -y
+              yum install -y httpd
+              systemctl start httpd
+              echo "VPC-A Instance" > /var/www/html/index.html
+              EOF
+  )
+  
+  tags = {
+    Name = "EC2-VPC-A"
+  }
+}
+
+# EC2 Instance in VPC-B (Private)
+resource "aws_instance" "ec2_b" {
+  ami                    = "ami-0c55b159cbfafe1f0"
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.private_subnet_b.id
+  vpc_security_group_ids = [aws_security_group.sg_b.id]
+  
+  user_data = base64encode(<<-EOF
+              #!/bin/bash
+              yum update -y
+              yum install -y httpd
+              systemctl start httpd
+              echo "VPC-B Instance" > /var/www/html/index.html
+              EOF
+  )
+  
+  tags = {
+    Name = "EC2-VPC-B"
+  }
+}
+
+==============================================================================
+7. TESTING CONNECTIVITY
+==============================================================================
+
+Test 1: SSH into EC2-A (Public)
+$ ssh -i key.pem ec2-user@<EC2-A-Public-IP>
+
+Test 2: From EC2-A, ping EC2-B (Private)
+$ ping <EC2-B-Private-IP>
+
+Test 3: From EC2-A, connect to EC2-B via HTTP
+$ curl http://<EC2-B-Private-IP>
+
+Expected Output:
+✓ Ping should succeed
+✓ HTTP response: "VPC-B Instance"
+✓ No internet required for communication
+
+==============================================================================
+8. ADVANCED VPC PEERING SCENARIOS
+==============================================================================
+
+8.1 Cross-Region Peering:
+  - Same CIDR blocks NOT allowed (can use 10.0.0.0/16 and 172.16.0.0/16)
+  - Transitive peering still NOT supported
+  - Higher latency vs same-region
+  - Data transfer charges apply
+
+8.2 Multi-VPC Architecture (Hub-and-Spoke):
+  ┌─────────────┐
+  │   VPC-HUB   │
+  └──────┬──────┘
+         │
+     ┌───┴────────┬────────────┐
+     │            │            │
+  ┌──▼──┐     ┌──▼──┐     ┌──▼──┐
+  │ A   │     │ B   │     │ C   │
+  └─────┘     └─────┘     └─────┘
+  
+  All spokes peer with hub only
+
+8.3 VPC Mesh (Fully Connected):
+  Use Transit Gateway for multiple VPCs
+  - Simplifies management
+  - Supports transitive routing
+
+8.4 Network ACLs in Peering:
+  Inbound Rule:  Allow traffic from peer CIDR
+  Outbound Rule: Allow traffic to peer CIDR
+  Remember: NACLs are stateless!
+
+==============================================================================
+9. COMMON PEERING ISSUES & TROUBLESHOOTING
+==============================================================================
+
+Issue 1: Peering Connection Status = "Inactive"
+  → Check if both VPCs exist
+  → Verify CIDR blocks don't overlap
+  → Check IAM permissions
+
+Issue 2: Ping fails between instances
+  → Verify peering connection is "Active"
+  → Check route tables (must have peer CIDR route)
+  → Verify Security Groups allow ICMP
+  → Check Network ACLs (inbound/outbound rules)
+
+Issue 3: DNS Resolution fails
+  → Enable DNS hostnames in both VPCs
+  → Enable DNS support in both VPCs
+  → Use private IP addresses
+
+Issue 4: Asymmetric Routing
+  → Verify route tables in BOTH VPCs
+  → Ensure peering connection in both directions
+  → Check for conflicting routes
+
+Debugging Commands:
+$ aws ec2 describe-vpc-peering-connections
+$ aws ec2 describe-route-tables --filters Name=vpc-id,Values=vpc-xxxxx
+$ aws ec2 describe-security-groups --filters Name=vpc-id,Values=vpc-xxxxx
+$ ping -c 4 <target-ip>
+$ traceroute <target-ip>
+
+==============================================================================
+10. BEST PRACTICES
+==============================================================================
+
+✓ Plan CIDR blocks carefully (avoid overlaps)
+✓ Use consistent naming conventions
+✓ Document peering relationships
+✓ Implement least privilege in Security Groups
+✓ Monitor peering connections with CloudWatch
+✓ Use AWS Transit Gateway for multiple VPCs
+✓ Enable VPC Flow Logs for troubleshooting
+✓ Test connectivity after setup
+✓ Keep route tables organized
+✓ Use tags for resource management
+✓ Implement redundancy with multiple peering connections
+✓ Consider costs for cross-region peering
+
+==============================================================================
+11. TERRAFORM APPLY CHECKLIST
+==============================================================================
+
+Before Deployment:
+  [ ] Review CIDR block allocation
+  [ ] Verify no IP conflicts
+  [ ] Check AWS region selection
+  [ ] Confirm AMI ID availability in region
+  [ ] Verify IAM permissions
+  [ ] Test Terraform syntax: terraform validate
+
+Deployment:
+  $ terraform init
+  $ terraform plan -out=tfplan
+  $ terraform apply tfplan
+
+Post-Deployment:
+  [ ] Verify all resources created
+  [ ] Test connectivity between instances
+  [ ] Check CloudWatch logs
+  [ ] Validate Security Group rules
+  [ ] Test from both directions
+
+Cleanup (When Done):
+  $ terraform destroy
+
+==============================================================================
+12. NEXT STEPS
+==============================================================================
+
+→ Learn AWS Transit Gateway for advanced routing
+→ Implement VPC Endpoints for AWS services
+→ Setup VPC Flow Logs for network monitoring
+→ Explore AWS Network Firewall
+→ Study AWS Site-to-Site VPN for hybrid connectivity
+→ Understand AWS Direct Connect
+
+==============================================================================
