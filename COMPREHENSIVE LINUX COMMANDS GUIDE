@@ -1,0 +1,256 @@
+ COMPREHENSIVE LINUX COMMANDS GUIDE
+
+## 1. FILE AND DIRECTORY MANAGEMENT
+- ls: List files/directories
+- cd: Change directory
+- pwd: Print working directory
+- mkdir: Create directory
+- rmdir: Remove empty directory
+- rm: Remove files/directories
+- cp: Copy files/directories
+- mv: Move/rename files
+- touch: Create empty file
+- find: Search files
+- locate: Find file by name
+- tree: Display directory structure
+
+## 2. FILE VIEWING & EDITING
+- cat: Display file content
+- less: View file with pagination
+- more: View file page by page
+- head: Show first lines
+- tail: Show last lines
+- nano: Text editor
+- vi/vim: Advanced text editor
+- gedit: GUI text editor
+
+## 3. FILE PERMISSIONS & OWNERSHIP
+- chmod: Change file permissions
+- chown: Change file owner
+- chgrp: Change group owner
+- umask: Set default permissions
+- ls -l: Show detailed file info
+
+## 4. USER & GROUP MANAGEMENT
+- useradd: Add new user
+- userdel: Delete user
+- usermod: Modify user
+- passwd: Change password
+- su: Switch user
+- sudo: Execute as superuser
+- groups: Show user groups
+- groupadd: Add new group
+- groupdel: Delete group
+- whoami: Show current user
+- id: Show user/group ID
+
+## 5. FILE SYSTEM & DISK MANAGEMENT
+- mount: Mount filesystem
+- umount: Unmount filesystem
+- df: Disk space usage
+- du: Directory size
+- fdisk: Partition manager
+- parted: Advanced partition tool
+- lsblk: List block devices
+- mkfs: Create filesystem
+- fsck: Check filesystem
+
+## 6. PROCESS MANAGEMENT
+- ps: Show processes
+- top: Real-time processes
+- htop: Enhanced top
+- kill: Terminate process
+- killall: Kill by name
+- bg: Background process
+- fg: Foreground process
+- jobs: List background jobs
+- &: Run in background
+- wait: Wait for process
+
+## 7. SYSTEM INFORMATION
+- uname: System information
+- hostname: Display hostname
+- uptime: System uptime
+- systemctl: Service manager
+- dmesg: Kernel messages
+- lsb_release: OS version
+- cat /proc/cpuinfo: CPU info
+- free: Memory usage
+- lsof: Open file descriptors
+- netstat: Network statistics
+
+## 8. NETWORKING COMMANDS
+- ping: Test connectivity
+- ifconfig: Network configuration
+- ip: IP configuration
+- netstat: Network status
+- ss: Socket statistics
+- curl: Transfer data
+- wget: Download files
+- scp: Secure copy
+- ssh: Secure shell
+- telnet: Remote connection
+- traceroute: Trace network path
+- nslookup: DNS lookup
+- dig: DNS query
+- arp: ARP protocol
+- route: Routing table
+
+## 9. TEXT PROCESSING & SEARCHING
+- grep: Search text patterns
+- sed: Stream editor
+- awk: Text processing
+- cut: Extract columns
+- paste: Join lines
+- sort: Sort lines
+- uniq: Remove duplicates
+- wc: Word/line count
+- tr: Translate characters
+- diff: Compare files
+- patch: Apply patches
+
+## 10. COMPRESSION & ARCHIVING
+- tar: Archive files
+- gzip: Compress files
+- gunzip: Decompress gzip
+- zip: Create zip archive
+- unzip: Extract zip
+- bzip2: Compress with bzip2
+- bunzip2: Decompress bzip2
+- 7z: 7-zip compression
+
+## 11. PACKAGE MANAGEMENT
+- apt/apt-get: Debian/Ubuntu package manager
+- yum/dnf: Red Hat/CentOS/Fedora package manager
+- pacman: Arch Linux package manager
+- brew: macOS package manager
+- dpkg: Debian package tool
+- rpm: RPM package manager
+- snap: Snap package manager
+
+## 12. SHELL & ENVIRONMENT
+- bash: Bash shell
+- sh: POSIX shell
+- zsh: Z shell
+- export: Set environment variable
+- echo: Print to stdout
+- set: Display/set variables
+- env: Environment variables
+- alias: Create command alias
+- unalias: Remove alias
+- source: Execute script in current shell
+- type: Show command type
+
+## 13. I/O REDIRECTION & PIPES
+- >: Redirect output
+- >>: Append output
+- <: Redirect input
+- 2>: Redirect error
+- 2>&1: Redirect error to output
+- |: Pipe output
+- tee: Read and write
+- xargs: Pass arguments
+
+## 14. SCHEDULING & AUTOMATION
+- cron: Scheduled tasks (crontab)
+- at: One-time scheduled task
+- crontab: Manage cron jobs
+- watch: Repeat command
+- timeout: Run with time limit
+
+## 15. LOG MANAGEMENT
+- journalctl: System journal viewer
+- tail -f: Follow log file
+- grep: Search logs
+- /var/log/: Log directory
+- syslog: System log daemon
+- logrotate: Rotate log files
+
+## 16. SECURITY & PERMISSIONS
+- ssh-keygen: Generate SSH keys
+- ssh-copy-id: Copy SSH key
+- sudo visudo: Edit sudoers
+- iptables: Firewall rules
+- ufw: Uncomplicated Firewall
+- fail2ban: Intrusion prevention
+- selinux: Security-Enhanced Linux
+
+## 17. SYSTEM ADMINISTRATION
+- systemctl: Service management
+- service: Legacy service command
+- systemd: System and service manager
+- runlevel: Current run level
+- init: System initialization
+- shutdown: Shutdown system
+- reboot: Restart system
+- halt: Stop system
+- poweroff: Power off system
+
+## 18. DEBUGGING & MONITORING
+- strace: System call tracer
+- ltrace: Library call tracer
+- gdb: GNU debugger
+- valgrind: Memory debugging
+- perf: Performance profiling
+- iotop: I/O monitoring
+- vmstat: Virtual memory stats
+- iostat: I/O statistics
+
+## 19. DEVELOPMENT TOOLS
+- gcc: C compiler
+- g++: C++ compiler
+- make: Build automation
+- git: Version control
+- docker: Container platform
+- npm/yarn: Node package managers
+- pip: Python package manager
+- java: Java runtime
+- python: Python interpreter
+
+## 20. MISCELLANEOUS COMMANDS
+- man: Manual pages
+- help: Help information
+- date: Display date/time
+- cal: Calendar
+- bc: Calculator
+- clear: Clear screen
+- history: Command history
+- whatis: Short description
+- apropos: Search man pages
+- which: Locate command
+- whereis: Locate binary/source
+- strings: Print strings in file
+- file: Determine file type
+- md5sum: Calculate MD5
+- sha256sum: Calculate SHA256
+- checksum: File verification
+
+## EXAMPLE USAGE
+
+# File Operations
+ls -la                          # List all files with details
+find / -name "*.txt" 2>/dev/null  # Find all txt files
+cp -r source/ destination/      # Copy directory recursively
+
+# Text Processing
+grep "pattern" file.txt         # Search pattern
+cat file1 file2 | grep "word"   # Pipe and search
+sed 's/old/new/g' file.txt      # Replace text
+
+# System Info
+uname -a                        # System information
+ps aux                          # All processes
+df -h                           # Disk usage human readable
+
+# Networking
+ping -c 4 google.com            # Test connectivity
+curl http://example.com         # Fetch URL
+ssh user@hostname               # Secure shell access
+
+# Compression
+tar -czf archive.tar.gz dir/    # Create gzip archive
+unzip file.zip                  # Extract zip file
+
+# Permissions
+chmod 755 script.sh             # Set permissions
+chown user:group file           # Change owner
